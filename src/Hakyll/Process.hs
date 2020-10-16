@@ -27,7 +27,7 @@ data CompilerOut   =
 
 -- | Arguments to provide to the process
 data ExecutableArg =
-  -- | Abstract representation the path to the Hakyll item.
+  -- | Abstract representation of the path to the Hakyll item.
     HakFilePath
   -- | Literal argument to provide to the other process.
   | ProcArg String deriving (Read, Show)
@@ -45,24 +45,24 @@ newtype ExecutableName = ExecutableName  String    deriving (Read, Show)
 type ExecutableArgs    = [ExecutableArg]
 
 -- | Helper function to indicate that the output file name is the same as the input file name with a new extension
--- Note: like hakyll, assumes that no '.' is present in the extension
+-- Note: like hakyll, assumes that no "." is present in the extension
 newExtension :: String -> FilePath -> FilePath
 newExtension ext f = (reverse . dropWhile (/= '.') . reverse $ f) <> ext
 
 -- | Helper function to indicate that the output file name is the same as the input file name with a new extension
--- Note: like hakyll, assumes that no '.' is present in the extension
+-- Note: like hakyll, assumes that no "." is present in the extension
 newExtOutFilePath :: String -> CompilerOut
 newExtOutFilePath ext = COutFile $ RelativePath (newExtension ext)
 
 execName ::  String  -> ExecutableName
 execName = ExecutableName
 
--- | Calls the external compiler with no arguments. Returns the output contents as a `ByteString`.
+-- | Calls the external compiler with no arguments. Returns the output contents as a 'B.ByteString'.
 --   If an error occurs this raises an exception.
 execCompiler     :: ExecutableName                   -> CompilerOut -> Compiler (Item B.ByteString)
 execCompiler name out          = execCompilerWith name [] out
 
--- | Calls the external compiler with the provided arguments. Returns the output contents as a `ByteString`.
+-- | Calls the external compiler with the provided arguments. Returns the output contents as a 'B.ByteString'.
 --   If an error occurs this raises an exception.
 execCompilerWith :: ExecutableName -> ExecutableArgs -> CompilerOut -> Compiler (Item B.ByteString)
 execCompilerWith name exArgs out = do
