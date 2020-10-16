@@ -9,6 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial implementation
--- Compiler that pipes hakyll items to other executables
--- Various helper functions
--- Simple example
+  - Compiler that pipes hakyll items to other executables
+  - Various helper functions
+  - Simple example

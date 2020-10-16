@@ -11,7 +11,7 @@ maintainer:          jim@jhmcstanton.com
 copyright:           2020 Jim McStanton
 category:            Web
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md CHANGELOG.md
 cabal-version:       >=1.10
 
 library

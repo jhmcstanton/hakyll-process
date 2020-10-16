@@ -51,8 +51,8 @@ newExtension ext f = (reverse . dropWhile (/= '.') . reverse $ f) <> ext
 
 -- | Helper function to indicate that the output file name is the same as the input file name with a new extension
 -- Note: like hakyll, assumes that no '.' is present in the extension
-newExtOutFilePath :: String -> OutFilePath
-newExtOutFilePath ext = RelativePath (newExtension ext)
+newExtOutFilePath :: String -> CompilerOut
+newExtOutFilePath ext = COutFile $ RelativePath (newExtension ext)
 
 execName ::  String  -> ExecutableName
 execName = ExecutableName
@@ -74,7 +74,7 @@ execCompilerWith name exArgs out = do
   pure $ itemSetBody results oldBody
 
 runExecutable :: ExecutableName -> [String] -> CompilerOut -> FilePath -> IO B.ByteString
-runExecutable (ExecutableName exName) args compilerOut inputFile = withProcessTerm procConf waitOutput where
+runExecutable (ExecutableName exName) args compilerOut inputFile = withProcessWait procConf waitOutput where
   procConf = setStdout byteStringOutput . proc exName $ args
   waitOutput process = do
     let stmProc = getStdout process

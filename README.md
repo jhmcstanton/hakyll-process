@@ -15,5 +15,5 @@ main = do
   hakyll $ do
     match "resume/*.tex" $ do
       route   $ setExtension "pdf"
-      compile $ execCompilerWith (execName "xelatex") [ProcArg "-output-directory", HakFilePath] (COutFile (newExtOutFilePath ("pdf")))
+      compile $ execCompilerWith (execName "xelatex") [ProcArg "-output-directory=resume/", HakFilePath] (newExtOutFilePath ("pdf"))
 ```
