@@ -1,5 +1,5 @@
 name:                hakyll-process
-version:             0.0.1.0
+version:             0.0.2.0
 synopsis:            Hakyll compiler for arbitrary external processes.
 description:         Exposes Hakyll compilers for passing file paths to external processes.
                      Transformed results are made available as Hakyll `Items`.

@@ -1,3 +1,8 @@
+{-|
+Module      : Hakyll.Process
+Description : Common compilers and helpers for external executables.
+Stability   : experimental
+-}
 module Hakyll.Process
     (
       newExtension
@@ -5,6 +10,7 @@ module Hakyll.Process
     , execName
     , execCompiler
     , execCompilerWith
+    , unsafeExecCompiler
     , CompilerOut(..)
     , ExecutableArg(..)
     , ExecutableArgs
@@ -46,7 +52,10 @@ type ExecutableArgs    = [ExecutableArg]
 
 -- | Helper function to indicate that the output file name is the same as the input file name with a new extension
 -- Note: like hakyll, assumes that no "." is present in the extension
-newExtension :: String -> FilePath -> FilePath
+newExtension ::
+     String   -- ^ New file extension, excluding the leading "."
+  -> FilePath -- ^ Original FilePath
+  -> FilePath
 newExtension ext f = (reverse . dropWhile (/= '.') . reverse $ f) <> ext
 
 -- | Helper function to indicate that the output file name is the same as the input file name with a new extension
@@ -54,11 +63,12 @@ newExtension ext f = (reverse . dropWhile (/= '.') . reverse $ f) <> ext
 newExtOutFilePath :: String -> CompilerOut
 newExtOutFilePath ext = COutFile $ RelativePath (newExtension ext)
 
-execName ::  String  -> ExecutableName
+execName :: String -> ExecutableName
 execName = ExecutableName
 
 -- | Calls the external compiler with no arguments. Returns the output contents as a 'B.ByteString'.
 --   If an error occurs this raises an exception.
+--   May be useful if you already have build scripts for artifacts in your repository.
 execCompiler     :: ExecutableName                   -> CompilerOut -> Compiler (Item B.ByteString)
 execCompiler name out          = execCompilerWith name [] out
 
@@ -68,22 +78,36 @@ execCompilerWith :: ExecutableName -> ExecutableArgs -> CompilerOut -> Compiler 
 execCompilerWith name exArgs out = do
   input   <- getResourceFilePath
   let args = fmap (hargToArg input) exArgs
-  results <- unsafeCompiler $ runExecutable name args out input
-  -- just using this to get at the item
-  oldBody <- getResourceString
-  pure $ itemSetBody results oldBody
+  let outputReader = cOutToFileContents input out
+  unsafeExecCompiler name args outputReader
 
-runExecutable :: ExecutableName -> [String] -> CompilerOut -> FilePath -> IO B.ByteString
-runExecutable (ExecutableName exName) args compilerOut inputFile = withProcessWait procConf waitOutput where
+-- | Primarily for internal use, occasionally useful when already building a compiler imperatively.
+-- Allows the caller to opt out of the declarative components of 'execCompiler' and 'execCompilerWith'.
+unsafeExecCompiler ::
+       ExecutableName                    -- ^ Name or filepath of the executable
+    -> [String]                          -- ^ Arguments to pass to the executable
+    -> (B.ByteString -> IO B.ByteString) -- ^ Action to read the output of the compiler. Input is the stdout of the process.
+    -> Compiler (Item B.ByteString)
+unsafeExecCompiler (ExecutableName exName) args outputReader =
+  do
+    results <- unsafeCompiler $ procResults
+    -- just using this to get at the item
+    oldBody <- getResourceString
+    pure $ itemSetBody results oldBody
+  where
+  procResults = withProcessWait procConf waitOutput
   procConf = setStdout byteStringOutput . proc exName $ args
   waitOutput process = do
     let stmProc = getStdout process
     out <- atomically stmProc
     checkExitCode process
-    case compilerOut of
-      CStdOut    -> pure out
-      COutFile (SpecificPath f) -> B.readFile f
-      COutFile (RelativePath f) -> B.readFile (f inputFile)
+    outputReader out
+
+--                 input fpath                   stdout contents
+cOutToFileContents :: FilePath -> CompilerOut -> B.ByteString -> IO B.ByteString
+cOutToFileContents _      CStdOut out                  = pure out
+cOutToFileContents _     (COutFile (SpecificPath f)) _ = B.readFile  f
+cOutToFileContents input (COutFile (RelativePath f)) _ = B.readFile (f input)
 
 hargToArg :: FilePath -> ExecutableArg -> String
 hargToArg _ (ProcArg s) = s
